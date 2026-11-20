@@ -78,6 +78,28 @@ as a differential oracle. If rmcp passes everything and the per-version isolatio
 fall back to B (layer 2 over a pinned rmcp, protocol core deferred). The differential must cover 2026-07-28 **and** the four legacy revisions. The gate also records rmcp's MSRV (1.88, verified) against each consumer's `rust-version`; CireSnave 2026-10-08 permits raising MSRV, so a gap is a cost to note, not a blocker. This is a CireSnave-level choice (it changes
 the project's size by a large factor); I recommend C with the gate, and ask pm-platform to confirm.
 
+### 4a. Gate result, first run (2026-11-20, rmcp 3.11.0, `tests/conformance_rmcp_oracle.rs`)
+
+rmcp served a one-tool calculator over an in-memory pipe; the test spoke raw JSON-RPC lines (not rmcp's client)
+and validated what rmcp answered against each revision's vendored schema. Result: **all 15 checks passed**
+(`InitializeResult`, `ListToolsResult`, `CallToolResult` for each of the four legacy revisions; `DiscoverResult`,
+`ListToolsResult`, `CallToolResult` for 2026-07-28), negotiated the requested version each time, computed
+`add(2,3) = 5`, and answered an unsupported 2026-07-28 version with code -32022 plus the supported list. Scope of
+that claim: one tool, tools only, happy path plus one error; resources, prompts, subscriptions, MRTR, HTTP and
+the `ttlMs`/`cacheScope` hints were not exercised, and the -32022 reply was read by eye, not schema-validated.
+
+What this means for the gate: rmcp is a **correct** protocol implementation for the tools path in all five
+revisions, so "rmcp is wrong or missing something" is not a reason to own layer 1. The remaining reasons to own it
+are the ones in 4: per-revision isolation under our control, one pinned place instead of four rmcp versions, and
+the Claude channel push. That is a judgement for CireSnave (board 473), not something the suite settles. **The
+cheapest sound reading is B first** (host layer over a pinned rmcp, which can ship soon), with the own core
+following only if a consumer shows a need rmcp cannot meet; I now lean B over C and say so plainly, which
+changes the recommendation in the table above.
+
+MSRV (consumer `rust-version` at origin/main, 2026-11-20): rmcp 3.11.0 needs 1.88. json-mcp-server 1.89,
+rust-analyzer-mcp-server **1.85.1**, synapse 1.98, sageant 1.94, agent-loop 1.97.1. Only rust-analyzer-mcp-server
+is below rmcp's floor; CireSnave (2026-10-08) permits raising it.
+
 ## 5. Shape
 
 - **Per-spec-version modules**: `mcpant::v2024_11_05`, `v2025_03_26`, `v2025_06_18`, `v2025_11_25`, `v2026_07_28`,
