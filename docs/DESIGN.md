@@ -41,7 +41,7 @@ What it must do with no further configuration: negotiate every supported spec re
 | rmcp 3.11.0 (crates.io, Apache-2.0, MSRV 1.88) already has `V_2026_07_28` through `V_2024_11_05` and mentions `server/discover` in model, client, stdio framing and the Streamable HTTP server | **verified** read of `rmcp-3.11.0/src/model.rs:169-173,289-293`; `grep server/discover` hits 5 files |
 | rmcp has **no** `claude/channel` support (0 hits; control: the same grep finds `server/discover`) | **verified** same tree |
 | rmcp versions in use across our projects: 3.4.0 synapse, 3.4.1 agent-loop spike, 3.7 json-mcp-server (considered, not adopted), 3.10 sageant; current is 3.11.0 | lane-reported (inputs file) except 3.11.0 (**verified** `cargo info rmcp`) |
-| MoCoPr: `mocopr` 0.1.0 on crates.io, MIT OR Apache-2.0 in the manifest, last push 2025-09-22, **GitHub reports no licence file** (`licenseInfo: null`), workspace of core/client/server/macros/rbac | **verified** `gh repo view`, `cargo info mocopr`, 2026-11-20 |
+| MoCoPr: `mocopr` 0.1.0 on crates.io, MIT OR Apache-2.0 in the manifest, last push 2025-09-22, GitHub reported no licence file on 2026-11-20 morning (`licenseInfo: null`); **LICENSE-MIT and LICENSE-APACHE were added to main later that day** (clone `98d0c31`), matching the manifest, workspace of core/client/server/macros/rbac | **verified** `gh repo view`, `cargo info mocopr`, 2026-11-20 |
 | The spec repo itself is mid-relicence MIT to Apache-2.0 (`NOASSERTION` on GitHub) | **verified** `LICENSE` text |
 
 Consequence: the earlier assumption in ROADMAP that MCPAnt exists because rmcp lags the spec is **false as of
@@ -54,7 +54,7 @@ today**. The case for MCPAnt must rest on something else (section 4).
 | **A. Adopt rmcp directly in every consumer** (status quo for synapse, sageant, agent-loop) | Complete, all five revisions, maintained by the spec's own org, macros | Four rmcp versions in the portfolio; each consumer re-writes the same layer above it (tool definition helper, grants/limits, truncation, namespacing, channel push); no per-version isolation we control; breaking 3.x releases hit us one by one; Apache-2.0 only | Fine for one consumer, which is not our situation |
 | **B. MCPAnt as a thin layer over rmcp** | One pinned rmcp, one place for the shared layer above it; least code | We inherit rmcp's architecture and release cadence for the part CireSnave called "word for word", and cannot satisfy json-mcp-server / rust-analyzer-mcp-server (which hand-rolled on purpose and did not adopt it) | Strong runner-up |
 | **C. MCPAnt own protocol core + the shared layer above it** (ROADMAP's plan) | Per-spec-version modules we control; conformance suite written from the spec text; builder shape shared with the other Ants; stdio+HTTP via HTTPAnt; one place for channel push | Most work; must keep pace with the spec; risk of being a worse rmcp | **Recommended, conditional on the gate in 4** |
-| **D. Adopt MoCoPr** | Already written | Last push 2025-09, single 0.1.0, no licence file in the repo, predates 2025-11-25 and 2026-07-28; lightbulb carries it as an unused dependency and calls its scaffold CONTRADICTED (lane-reported) | Reject. Read for ideas only; EOL README pointer, no yank |
+| **D. Adopt MoCoPr** | Already written | Last push 2025-09, single 0.1.0, predates 2025-11-25 and 2026-07-28; lightbulb carries it as an unused dependency and calls its scaffold CONTRADICTED (lane-reported) | Reject. Read for ideas only; EOL README pointer, no yank |
 | **E. Keep hand-rolling per server** | Nothing | The duplication CireSnave wants gone | Reject |
 
 fam's MCP adapter is TypeScript (decommissioning into Synapse): pattern only, nothing seeded.
@@ -172,7 +172,9 @@ Suite results are published per revision; a revision we cannot fully pass is mar
 | sageant `crates/sageant-mcp` | MIT OR Apache-2.0; per-file trace **not redone**; credit sageant lane | seed host layer (PR offered on go) |
 | synapse channel push + wire probe | MIT OR Apache-2.0, own code | seed channel feature and probe tooling |
 | wasm-sandbox templates | MIT, Eric Evans (+ his AI agent); "none worth seeding" | JSON-RPC type shapes at most |
-| MoCoPr | no licence file in repo (manifest says dual) | read only; copy nothing until the file exists |
+| MoCoPr | MIT OR Apache-2.0: LICENSE-MIT and LICENSE-APACHE on main (`98d0c31`), matching its manifest; author Eric Evans | may be lifted (limits middleware); keep both licence texts and credit Eric Evans |
+| OverMind `4662ef9` | only an optional Python `mcp>=2.2.0` and `examples/audit_mcp_tools.py` (pm-platform's read, lane-reported) | nothing to lift (a lint seed at most) |
+| rockfish `290f75d`, fireline `6136520` | 0 code hits; fireline one doc line (`SEAM-INVENTORY.md:38`) (pm-platform's read) | nothing |
 | editant's md-mcp (`zekaizer/md-mcp`, Luke Lee) | **licence unresolved**; request awaits CireSnave | **copy nothing**; ADR-0011 envelope as a pattern only |
 | rmcp | Apache-2.0 | dev-dependency oracle only; no code copied |
 
@@ -199,7 +201,7 @@ The first release is a plain 0.x (6.30 allows release candidates only for too-br
 
 1. Confirm C-with-gate over B (section 4).
 2. Owners of wasm-sandbox, fam, lsp-bridge are known to pm-ants; none has code to offer, so no answer is needed.
-3. MoCoPr has no licence file: should the EOL pointer PR also add one? (Repo is CireSnave's.)
+3. Answered: MoCoPr now carries LICENSE-MIT and LICENSE-APACHE (no action for this lane).
 4. ConfigurAnt/CapAnt/RedactAnt/AuditAnt API fit is unverified.
 
 — lane: mcpant
