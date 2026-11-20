@@ -75,7 +75,7 @@ Build C, in two layers (a distinction the inputs file asked the note to make exp
 **Gate (honest uncertainty):** because rmcp already covers all revisions, layer 1 is only worth owning if it beats
 "wrap rmcp" on something measurable. Before layer 1 is built, the conformance suite (6) is run **against rmcp 3.11**
 as a differential oracle. If rmcp passes everything and the per-version isolation buys nothing a consumer asked for,
-fall back to B (layer 2 over a pinned rmcp, protocol core deferred). This is a CireSnave-level choice (it changes
+fall back to B (layer 2 over a pinned rmcp, protocol core deferred). The differential must cover 2026-07-28 **and** the four legacy revisions. The gate also records rmcp's MSRV (1.88, verified) against each consumer's `rust-version`; CireSnave 2026-10-08 permits raising MSRV, so a gap is a cost to note, not a blocker. This is a CireSnave-level choice (it changes
 the project's size by a large factor); I recommend C with the gate, and ask pm-platform to confirm.
 
 ## 5. Shape
