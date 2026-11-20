@@ -140,7 +140,7 @@ the per-version modules. Errors name the fix.
 2. Core: 2026-07-28 and 2025-11-25 first (json-mcp-server's dual era), older revisions after.
 3. Host layer features seeded from the offers above.
 4. Migrate json-mcp-server, rust-analyzer-mcp-server first (ROADMAP row 3), then sageant, synapse, agent-loop.
-Release candidates only (6.30); the PM allocates versions; no publish from this lane.
+The first release is a plain 0.x (6.30 allows release candidates only for too-broken or pre-major polish, which does not apply); the PM allocates versions; no publish from this lane.
 
 ## 10. Open questions for pm-platform
 
