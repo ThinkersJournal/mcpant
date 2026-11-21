@@ -119,3 +119,64 @@ async fn unsupported_version_over_http_status_is_reported() {
     assert_eq!(body["error"]["code"], -32022);
     assert_eq!(body["error"]["data"]["requested"], "1999-01-01");
 }
+
+/// The 2026-07-28 HTTP path: no handshake and no session header; each request carries its version in `_meta` and in the
+/// `MCP-Protocol-Version` header. `tools/list` then `tools/call` through a running HTTPAnt `Server`, schema-free (the
+/// schema checks for this revision are in the conformance suite; this proves the transport path).
+#[tokio::test]
+async fn stateless_2026_07_28_works_over_http_without_a_session() {
+    let rmcp_svc = StreamableHttpService::new(
+        || Ok(Calc),
+        Arc::new(LocalSessionManager::default()),
+        StreamableHttpServerConfig::default(),
+    );
+    let mount = move |req: Request| {
+        let mut inner = rmcp_svc.clone();
+        async move {
+            let resp = Service::<Request>::call(&mut inner, req)
+                .await
+                .unwrap_or_else(|e: Infallible| match e {});
+            resp.map(Body::new) as Response
+        }
+    };
+    let server = Server::new()
+        .post("/mcp", mount)
+        .bind("127.0.0.1:0")
+        .await
+        .expect("bind");
+    let url = format!("http://{}/mcp", server.addr());
+    let meta = serde_json::json!({"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{}});
+    let c = Client::new();
+    let call = |method: &str, name: Option<&str>, body: serde_json::Value| {
+        let mut b = c
+            .post(&url)
+            .header("mcp-method", method)
+            .header("content-type", "application/json")
+            .header("accept", "application/json, text/event-stream")
+            .header("mcp-protocol-version", "2026-07-28");
+        if let Some(n) = name {
+            b = b.header("mcp-name", n);
+        }
+        b.body(body.to_string()).send()
+    };
+    let list = call(
+        "tools/list",
+        None,
+        serde_json::json!({"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":meta}}),
+    )
+    .await
+    .expect("list");
+    assert!(
+        list.headers().get("mcp-session-id").is_none(),
+        "2026-07-28 has no session"
+    );
+    let (status, text) = (list.status(), list.text().await.unwrap());
+    assert!(status.is_success(), "{status}: {text}");
+    assert!(text.contains("\"name\":\"add\""), "{text}");
+    let sum = call("tools/call", Some("add"), serde_json::json!({"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"_meta":meta,"name":"add","arguments":{"a":2,"b":3}}}))
+        .await
+        .expect("call");
+    let (status, text) = (sum.status(), sum.text().await.unwrap());
+    assert!(status.is_success(), "{status}: {text}");
+    assert!(text.contains("\"text\":\"5\""), "{text}");
+}
