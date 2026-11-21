@@ -161,4 +161,30 @@ async fn a_channel_event_reaches_an_http_client_and_we_record_which_stream() {
         on_post.contains("\"id\":2"),
         "the tool result must come back on the POST: {on_post}"
     );
+
+    // End the session: DELETE must be accepted, and the session id must then be refused.
+    let del = c
+        .delete(&url)
+        .header("mcp-session-id", &sid)
+        .header("mcp-protocol-version", "2025-11-25")
+        .send()
+        .await
+        .expect("DELETE");
+    println!("DELETE status={}", del.status());
+    assert!(del.status().is_success(), "DELETE {}", del.status());
+    let after = post(
+        json!({"jsonrpc":"2.0","id":9,"method":"tools/list","params":{}}),
+        Some(&sid),
+    )
+    .await
+    .expect("after delete");
+    println!(
+        "after DELETE, a request with the old session id: {}",
+        after.status()
+    );
+    assert!(
+        after.status().is_client_error(),
+        "a deleted session must be refused, got {}",
+        after.status()
+    );
 }
