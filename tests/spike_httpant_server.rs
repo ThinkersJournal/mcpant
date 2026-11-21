@@ -67,5 +67,8 @@ async fn rmcp_streamable_http_serves_from_a_running_httpant_server() {
     let text = resp.text().await.expect("body");
     println!("status={status}\n{text}");
     assert!(status.is_success(), "{status}: {text}");
-    assert!(text.contains("protocolVersion"), "no InitializeResult: {text}");
+    assert!(
+        text.contains("protocolVersion"),
+        "no InitializeResult: {text}"
+    );
 }
