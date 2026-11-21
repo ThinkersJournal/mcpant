@@ -13,6 +13,7 @@ truncate = ["dep:serde_json"]
 channel = ["dep:serde_json", "dep:rmcp"]
 backend = ["dep:serde_json", "dep:rmcp"]
 limits = ["backend", "dep:tokio"]
+namespace = []
 
 [dependencies]
 serde_json = { version = "1", optional = true }
