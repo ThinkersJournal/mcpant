@@ -6,7 +6,8 @@
 use rmcp::{
     ErrorData as McpError, RoleServer, ServerHandler, ServiceExt,
     model::{
-        CacheScope, ContentBlock, GetPromptRequestParams, GetPromptResponse, GetPromptResult,
+        CacheScope, CallToolRequestParams, CallToolResponse, CallToolResult, ContentBlock,
+        GetPromptRequestParams, GetPromptResponse, GetPromptResult, InputRequiredResult,
         ListPromptsResult, ListResourcesResult, PaginatedRequestParams, Prompt, PromptMessage,
         ReadResourceRequestParams, ReadResourceResponse, ReadResourceResult, Resource,
         ResourceContents, Role, ServerCapabilities, ServerConfig, SubscribeRequestParams,
@@ -28,6 +29,7 @@ impl ServerHandler for Content {
     fn get_info(&self) -> ServerConfig {
         ServerConfig::new(
             ServerCapabilities::builder()
+                .enable_tools()
                 .enable_resources()
                 .enable_resources_subscribe()
                 .enable_prompts()
@@ -80,6 +82,20 @@ impl ServerHandler for Content {
         _c: RequestContext<RoleServer>,
     ) -> Result<(), McpError> {
         Ok(())
+    }
+
+    /// One tool, `needs-input`: first call asks for more input (MRTR), a retry that echoes `requestState` completes.
+    async fn call_tool(
+        &self,
+        r: CallToolRequestParams,
+        _c: RequestContext<RoleServer>,
+    ) -> Result<CallToolResponse, McpError> {
+        Ok(match r.request_state {
+            None => InputRequiredResult::from_request_state("opaque-1").into(),
+            Some(state) => {
+                CallToolResult::success(vec![ContentBlock::text(format!("done:{state}"))]).into()
+            }
+        })
     }
 
     async fn list_prompts(
@@ -220,6 +236,7 @@ async fn run(rev: &str, report: &mut Vec<String>) {
     if stateless {
         listen_probe(&mut w, &meta, report).await;
     }
+    mrtr_probe(&mut w, rev, stateless, &meta, report).await;
 }
 
 /// 2026-07-28 `subscriptions/listen`: a long-lived request. The first message back must be the acknowledged notification; there is
@@ -277,4 +294,53 @@ async fn rmcp_311_resources_prompts_and_cache_hints_report() {
         report.iter().any(|l| l.contains(" OK ")),
         "harness produced no OK line"
     );
+}
+
+/// MRTR: a tool answers `InputRequiredResult`; the retry echoes `requestState`. Only 2026-07-28 has `resultType: input_required`;
+/// an older revision's client cannot parse it, so seeing it there is a DIFF.
+async fn mrtr_probe(
+    w: &mut Wire,
+    rev: &str,
+    stateless: bool,
+    meta: &Value,
+    report: &mut Vec<String>,
+) {
+    let mut p = json!({"name": "needs-input", "arguments": {}});
+    if stateless {
+        p["_meta"] = meta.clone();
+    }
+    let first = w
+        .rpc(&json!({"jsonrpc":"2.0","id":90,"method":"tools/call","params":p}))
+        .await;
+    let seen = first["result"]["resultType"] == "input_required";
+    if !stateless {
+        let verdict = if seen { "DIFF" } else { "OK  " };
+        return report.push(format!(
+            "[{rev}] {verdict} MRTR on a revision without it: resultType input_required sent={seen}; reply: {first}"
+        ));
+    }
+    check(
+        report,
+        rev,
+        "MRTR InputRequiredResult",
+        "InputRequiredResult",
+        &first,
+    );
+    let mut retry = json!({"name": "needs-input", "arguments": {}, "requestState": first["result"]["requestState"]});
+    retry["_meta"] = meta.clone();
+    let second = w
+        .rpc(&json!({"jsonrpc":"2.0","id":91,"method":"tools/call","params":retry}))
+        .await;
+    check(
+        report,
+        rev,
+        "MRTR retry CallToolResult",
+        "CallToolResult",
+        &second,
+    );
+    let text = second["result"]["content"][0]["text"]
+        .as_str()
+        .unwrap_or("");
+    report.push(format!("[{rev}] MRTR retry echoed state: {text}"));
+    assert_eq!(text, "done:opaque-1", "retry must echo requestState");
 }
