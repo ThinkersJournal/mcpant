@@ -4,7 +4,13 @@
 use serde_json::{Value, json};
 use std::path::PathBuf;
 
-pub const REVISIONS: [&str; 5] = ["2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25", "2026-07-28"];
+pub const REVISIONS: [&str; 5] = [
+    "2024-11-05",
+    "2025-03-26",
+    "2025-06-18",
+    "2025-11-25",
+    "2026-07-28",
+];
 
 fn schema_root(rev: &str) -> Value {
     let p = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -17,7 +23,11 @@ fn schema_root(rev: &str) -> Value {
 
 /// Draft-07 revisions keep definitions under `definitions`, 2020-12 ones under `$defs`.
 fn defs_key(root: &Value) -> &'static str {
-    if root.get("$defs").is_some() { "$defs" } else { "definitions" }
+    if root.get("$defs").is_some() {
+        "$defs"
+    } else {
+        "definitions"
+    }
 }
 
 /// Validate `instance` against the named definition of `rev`; Err carries every violation.
@@ -30,7 +40,10 @@ pub fn validate(rev: &str, def: &str, instance: &Value) -> Result<(), Vec<String
     );
     root["$ref"] = Value::String(format!("#/{key}/{def}"));
     let validator = jsonschema::validator_for(&root).expect("schema compiles");
-    let errs: Vec<String> = validator.iter_errors(instance).map(|e| e.to_string()).collect();
+    let errs: Vec<String> = validator
+        .iter_errors(instance)
+        .map(|e| e.to_string())
+        .collect();
     if errs.is_empty() { Ok(()) } else { Err(errs) }
 }
 
@@ -63,7 +76,10 @@ fn negative_control_a_wrong_shape_is_rejected() {
     // Without this, the tests above could pass against a validator that accepts everything.
     let bad = json!({"content": "not an array"});
     for rev in REVISIONS {
-        assert!(validate(rev, "CallToolResult", &bad).is_err(), "{rev} accepted a bad result");
+        assert!(
+            validate(rev, "CallToolResult", &bad).is_err(),
+            "{rev} accepted a bad result"
+        );
     }
 }
 

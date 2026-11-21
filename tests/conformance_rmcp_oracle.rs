@@ -42,7 +42,10 @@ impl Wire {
             }
         });
         let (r, w) = tokio::io::split(client);
-        Wire { w, r: BufReader::new(r) }
+        Wire {
+            w,
+            r: BufReader::new(r),
+        }
     }
     async fn send(&mut self, v: &Value) {
         let mut line = v.to_string();
@@ -52,11 +55,18 @@ impl Wire {
     /// Next line, or None on timeout (a server that stays silent is itself a finding).
     async fn recv(&mut self) -> Option<Value> {
         let mut line = String::new();
-        let n = tokio::time::timeout(std::time::Duration::from_secs(3), self.r.read_line(&mut line))
-            .await
-            .ok()?
-            .ok()?;
-        if n == 0 { None } else { serde_json::from_str(&line).ok() }
+        let n = tokio::time::timeout(
+            std::time::Duration::from_secs(3),
+            self.r.read_line(&mut line),
+        )
+        .await
+        .ok()?
+        .ok()?;
+        if n == 0 {
+            None
+        } else {
+            serde_json::from_str(&line).ok()
+        }
     }
 }
 
@@ -73,16 +83,31 @@ async fn run_legacy(rev: &str, report: &mut Vec<String>) {
     let init = json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{
         "protocolVersion": rev, "capabilities": {}, "clientInfo": {"name":"mcpant-conformance","version":"0"}}});
     w.send(&init).await;
-    let Some(res) = w.recv().await else { return report.push(format!("[{rev}] DIFF no reply to initialize")) };
+    let Some(res) = w.recv().await else {
+        return report.push(format!("[{rev}] DIFF no reply to initialize"));
+    };
     let result = res.get("result").cloned().unwrap_or(Value::Null);
-    report.push(format!("[{rev}] negotiated protocolVersion = {}", result["protocolVersion"]));
+    report.push(format!(
+        "[{rev}] negotiated protocolVersion = {}",
+        result["protocolVersion"]
+    ));
     check(report, rev, "InitializeResult", "InitializeResult", &result);
-    w.send(&json!({"jsonrpc":"2.0","method":"notifications/initialized"})).await;
-    w.send(&json!({"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}})).await;
-    let list = w.recv().await.and_then(|m| m.get("result").cloned()).unwrap_or(Value::Null);
+    w.send(&json!({"jsonrpc":"2.0","method":"notifications/initialized"}))
+        .await;
+    w.send(&json!({"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}))
+        .await;
+    let list = w
+        .recv()
+        .await
+        .and_then(|m| m.get("result").cloned())
+        .unwrap_or(Value::Null);
     check(report, rev, "ListToolsResult", "ListToolsResult", &list);
     w.send(&json!({"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"add","arguments":{"a":2,"b":3}}})).await;
-    let call = w.recv().await.and_then(|m| m.get("result").cloned()).unwrap_or(Value::Null);
+    let call = w
+        .recv()
+        .await
+        .and_then(|m| m.get("result").cloned())
+        .unwrap_or(Value::Null);
     check(report, rev, "CallToolResult", "CallToolResult", &call);
     let text = call["content"][0]["text"].as_str().unwrap_or("");
     assert_eq!(text, "5", "[{rev}] add(2,3) must be 5, got {call}");
@@ -93,21 +118,42 @@ async fn run_stateless(report: &mut Vec<String>) {
     let rev = "2026-07-28";
     let meta = json!({"io.modelcontextprotocol/protocolVersion": rev, "io.modelcontextprotocol/clientCapabilities": {}});
     let mut w = Wire::start();
-    w.send(&json!({"jsonrpc":"2.0","id":1,"method":"server/discover","params":{"_meta": meta}})).await;
-    let Some(res) = w.recv().await else { return report.push(format!("[{rev}] DIFF no reply to server/discover")) };
-    check(report, rev, "DiscoverResult", "DiscoverResult", &res.get("result").cloned().unwrap_or(res.clone()));
-    w.send(&json!({"jsonrpc":"2.0","id":2,"method":"tools/list","params":{"_meta": meta}})).await;
-    let list = w.recv().await.and_then(|m| m.get("result").cloned()).unwrap_or(Value::Null);
+    w.send(&json!({"jsonrpc":"2.0","id":1,"method":"server/discover","params":{"_meta": meta}}))
+        .await;
+    let Some(res) = w.recv().await else {
+        return report.push(format!("[{rev}] DIFF no reply to server/discover"));
+    };
+    check(
+        report,
+        rev,
+        "DiscoverResult",
+        "DiscoverResult",
+        &res.get("result").cloned().unwrap_or(res.clone()),
+    );
+    w.send(&json!({"jsonrpc":"2.0","id":2,"method":"tools/list","params":{"_meta": meta}}))
+        .await;
+    let list = w
+        .recv()
+        .await
+        .and_then(|m| m.get("result").cloned())
+        .unwrap_or(Value::Null);
     check(report, rev, "ListToolsResult", "ListToolsResult", &list);
     w.send(&json!({"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"_meta": meta,"name":"add","arguments":{"a":2,"b":3}}})).await;
-    let call = w.recv().await.and_then(|m| m.get("result").cloned()).unwrap_or(Value::Null);
+    let call = w
+        .recv()
+        .await
+        .and_then(|m| m.get("result").cloned())
+        .unwrap_or(Value::Null);
     check(report, rev, "CallToolResult", "CallToolResult", &call);
     // An unsupported version must be answered with UnsupportedProtocolVersionError.
     let bad = json!({"io.modelcontextprotocol/protocolVersion": "1999-01-01", "io.modelcontextprotocol/clientCapabilities": {}});
-    w.send(&json!({"jsonrpc":"2.0","id":4,"method":"tools/list","params":{"_meta": bad}})).await;
+    w.send(&json!({"jsonrpc":"2.0","id":4,"method":"tools/list","params":{"_meta": bad}}))
+        .await;
     match w.recv().await {
         Some(m) => report.push(format!("[{rev}] unsupported-version reply: {}", m)),
-        None => report.push(format!("[{rev}] DIFF no reply to an unsupported protocol version")),
+        None => report.push(format!(
+            "[{rev}] DIFF no reply to an unsupported protocol version"
+        )),
     }
 }
 
@@ -123,5 +169,8 @@ async fn rmcp_311_differential_report() {
         println!("{l}");
     }
     // Negative control: the report must contain at least one OK, or the harness validated nothing.
-    assert!(report.iter().any(|l| l.contains(" OK ")), "harness produced no OK line");
+    assert!(
+        report.iter().any(|l| l.contains(" OK ")),
+        "harness produced no OK line"
+    );
 }
