@@ -66,8 +66,10 @@ async fn server_declares_channel_and_pushes_custom_notification() {
     let mut send = async |v: Value| {
         w.write_all(format!("{v}\n").as_bytes()).await.unwrap();
     };
-    send(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{
-        "protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"t","version":"0"}}}))
+    send(
+        json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{
+        "protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"t","version":"0"}}}),
+    )
     .await;
     let init = line(&mut r).await;
     println!("initialize result: {init}");
