@@ -5,6 +5,10 @@ all-features = true
 
 [advisories]
 version = 2
+# RUSTSEC-2026-0543: chrono is unmaintained (no vulnerability, no fixed version). Pulled by dev-dependencies only:
+# chrono 0.4.45 <- rmcp 3.11.0 (direct) and <- schemars 1.2.3 (also via rmcp). Standing OK: CIRESNAVE-EXPECTATIONS 6.15b
+# (CireSnave 2026-11-18). EXPIRES 2026-12-17; drop it when rmcp/schemars stop pulling chrono (ROADMAP row 4).
+ignore = ["RUSTSEC-2026-0543"]
 
 [licenses]
 version = 2
