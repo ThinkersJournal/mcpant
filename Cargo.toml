@@ -12,10 +12,13 @@ default = []
 truncate = ["dep:serde_json"]
 channel = ["dep:serde_json", "dep:rmcp"]
 backend = ["dep:serde_json", "dep:rmcp"]
+limits = ["backend", "dep:tokio"]
 
 [dependencies]
 serde_json = { version = "1", optional = true }
 rmcp = { version = "3.11", optional = true, default-features = false, features = ["server"] }
+
+tokio = { version = "1", optional = true, features = ["time", "sync"] }
 
 [dev-dependencies]
 jsonschema = { version = "0.61", default-features = false }
