@@ -133,6 +133,10 @@ async fn a_channel_event_reaches_an_http_client_and_we_record_which_stream() {
     assert!(stream.status().is_success(), "GET {}", stream.status());
     let mut standalone = stream.into_body();
 
+    // Leave the standalone stream quiet first: an idle response stream must survive (httpant-server 0.7.10 sets no response-side
+    // idle timeout; rmcp's own SSE keep-alive is 15 s, so nothing is sent in this window).
+    tokio::time::sleep(Duration::from_secs(4)).await;
+
     let call = post(
         json!({"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"push","arguments":{}}}),
         Some(&sid),
