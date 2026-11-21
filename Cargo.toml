@@ -26,6 +26,7 @@ jsonschema = { version = "0.61", default-features = false }
 serde_json = "1"
 rmcp = { version = "3.11", features = ["server", "macros", "transport-async-rw", "transport-streamable-http-server"] }
 httpant-core = "0.7"
+httpant = "0.7"
 http = "1"
 http-body-util = "0.1"
 tower = { version = "0.5", features = ["util"] }
