@@ -9,7 +9,8 @@ use rmcp::{
         CacheScope, ContentBlock, GetPromptRequestParams, GetPromptResponse, GetPromptResult,
         ListPromptsResult, ListResourcesResult, PaginatedRequestParams, Prompt, PromptMessage,
         ReadResourceRequestParams, ReadResourceResponse, ReadResourceResult, Resource,
-        ResourceContents, Role, ServerCapabilities, ServerConfig,
+        ResourceContents, Role, ServerCapabilities, ServerConfig, SubscribeRequestParams,
+        SubscriptionFilter, UnsubscribeRequestParams,
     },
     service::RequestContext,
 };
@@ -28,6 +29,7 @@ impl ServerHandler for Content {
         ServerConfig::new(
             ServerCapabilities::builder()
                 .enable_resources()
+                .enable_resources_subscribe()
                 .enable_prompts()
                 .build(),
         )
@@ -54,6 +56,30 @@ impl ServerHandler for Content {
                 .with_cache_scope(CacheScope::Private)
                 .into(),
         )
+    }
+
+    /// rmcp leaves `subscriptions/listen` unimplemented (-32601) until the handler opts in here.
+    fn accepted_subscription_filter(
+        &self,
+        requested: &SubscriptionFilter,
+    ) -> Option<SubscriptionFilter> {
+        Some(requested.clone())
+    }
+
+    async fn subscribe(
+        &self,
+        _r: SubscribeRequestParams,
+        _c: RequestContext<RoleServer>,
+    ) -> Result<(), McpError> {
+        Ok(())
+    }
+
+    async fn unsubscribe(
+        &self,
+        _r: UnsubscribeRequestParams,
+        _c: RequestContext<RoleServer>,
+    ) -> Result<(), McpError> {
+        Ok(())
     }
 
     async fn list_prompts(
@@ -105,6 +131,9 @@ impl Wire {
     }
     async fn rpc(&mut self, v: &Value) -> Value {
         self.send(v).await;
+        self.recv_value().await
+    }
+    async fn recv_value(&mut self) -> Value {
         let mut line = String::new();
         let n = tokio::time::timeout(
             std::time::Duration::from_secs(3),
@@ -163,8 +192,17 @@ async fn run(rev: &str, report: &mut Vec<String>) {
             "ReadResourceResult",
         ),
         ("prompts/list", json!({}), "ListPromptsResult"),
+        // 2026-07-28 replaced subscribe/unsubscribe with `subscriptions/listen` (checked below), so skip the old call there.
         ("prompts/get", json!({"name":"greet"}), "GetPromptResult"),
     ];
+    let mut cases = Vec::from(cases);
+    if !stateless {
+        cases.push((
+            "resources/subscribe",
+            json!({"uri":"mem://a"}),
+            "EmptyResult",
+        ));
+    }
     for (i, (method, p, def)) in cases.into_iter().enumerate() {
         let reply = w
             .rpc(&json!({"jsonrpc":"2.0","id": i + 10,"method":method,"params":params(p)}))
@@ -178,6 +216,38 @@ async fn run(rev: &str, report: &mut Vec<String>) {
                 r.get("cacheScope").unwrap_or(&Value::Null)
             ));
         }
+    }
+    if stateless {
+        listen_probe(&mut w, &meta, report).await;
+    }
+}
+
+/// 2026-07-28 `subscriptions/listen`: a long-lived request. The first message back must be the acknowledged notification; there is
+/// no result until the server ends the subscription. Reported as found.
+async fn listen_probe(w: &mut Wire, meta: &Value, report: &mut Vec<String>) {
+    let rev = "2026-07-28";
+    w.send(
+        &json!({"jsonrpc":"2.0","id":77,"method":"subscriptions/listen","params":{
+        "_meta": meta, "notifications": {"resourceSubscriptions": ["mem://a"]}}}),
+    )
+    .await;
+    let first = w.recv_value().await;
+    report.push(format!(
+        "[{rev}] subscriptions/listen first message: {first}"
+    ));
+    if first.is_null() {
+        return report.push(format!(
+            "[{rev}] DIFF subscriptions/listen: no message within 3 s"
+        ));
+    }
+    match schema::validate(rev, "SubscriptionsAcknowledgedNotification", &first) {
+        Ok(()) => report.push(format!(
+            "[{rev}] OK   subscriptions/listen acknowledged notification"
+        )),
+        Err(e) => report.push(format!(
+            "[{rev}] DIFF subscriptions/listen first message is not the acknowledgement: {}",
+            e.join(" | ")
+        )),
     }
 }
 
