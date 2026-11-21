@@ -145,8 +145,7 @@ code search for unpublished projects was not run.
   simplifies the HTTP side; the legacy revisions still need `Mcp-Session-Id`.
 - **Ants reused**: HTTPAnt (transport), ConfigurAnt (settings, builder shape), CapAnt (tool grants), RedactAnt
   (output/log redaction and the untrusted-text envelope), AuditAnt (tool-call audit trail). Each is an optional
-  feature so the core stays dependency-free. I have **not** verified their current APIs; that is the first task of
-  the host-layer work.
+  feature so the core stays dependency-free. **Checked against crates.io on 2026-11-21 (`cargo info`; descriptions only, APIs not read): three of these five do not do what this list assumed.** CapAnt 0.1.0 is a capability-*matching* engine (developers declare needs, providers declare abilities, it returns the providers that satisfy them), not a tool-grant or authorisation layer, so it is not the home for sageant-style write grants. RedactAnt is published as `redactant` 0.1.14: secret *values* with blank `Display`/`Debug`, an explicit `expose()` and zeroize on drop; it is not an output redactor or an untrusted-text envelope (the envelope stays a host-layer item, `channel::escape` is the only piece we have). AuditAnt is `auditant` **0.0.0, a placeholder**: nothing to build on yet. ConfigurAnt 0.7.2 does fit settings (schema-first, layered, secrets never printed) but needs Rust 1.95. HTTPAnt is verified (0.7.10, four spikes). Consequence: none of CapAnt, RedactAnt or AuditAnt is wired in; `redactant` is the only plausible one, for secret config values, if a layer ever holds one.
 - **Consumers keep**: only project-specific tools and their argument structs (json-mcp-server's tools,
   rust-analyzer's `lsp.rs`, sageant's `Tools<S,I>`, Synapse's mailbox/ack/lease). Everything in 4(2) moves.
 - **wasm-sandbox** needs a generator callable from Rust (tool spec in, server out) rather than string templates:
@@ -203,6 +202,6 @@ The first release is a plain 0.x (6.30 allows release candidates only for too-br
 1. Confirm C-with-gate over B (section 4).
 2. Owners of wasm-sandbox, fam, lsp-bridge are known to pm-ants; none has code to offer, so no answer is needed.
 3. Answered: MoCoPr now carries LICENSE-MIT and LICENSE-APACHE (no action for this lane).
-4. ConfigurAnt/CapAnt/RedactAnt/AuditAnt API fit is unverified.
+4. Answered in part (2026-11-21, section 5): CapAnt is capability matching, `redactant` is secret values, AuditAnt is a 0.0.0 placeholder, ConfigurAnt fits but needs Rust 1.95. Still unread: their source APIs.
 
 — lane: mcpant
