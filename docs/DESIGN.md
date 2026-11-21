@@ -86,7 +86,7 @@ and validated what rmcp answered against each revision's vendored schema. Result
 `ListToolsResult`, `CallToolResult` for 2026-07-28), negotiated the requested version each time, computed
 `add(2,3) = 5`, and answered an unsupported 2026-07-28 version with code -32022 plus the supported list. Scope of
 that claim: one tool, tools only, happy path plus one error; resources, prompts, subscriptions, MRTR, HTTP and
-the `ttlMs`/`cacheScope` hints were not exercised, and the -32022 reply was read by eye, not schema-validated.
+the `ttlMs`/`cacheScope` hints were not exercised, and the -32022 reply was read by eye, not schema-validated. **Update 2026-11-21:** the -32022 reply is now schema-validated against `UnsupportedProtocolVersionError` (2026-07-28) and passes, with a control (the same reply with code -32000 is rejected by that definition). Still unexercised: resources, prompts, subscriptions, MRTR, the `ttlMs`/`cacheScope` hints, and the HTTP 400 status the spec requires for this error (the stdio run cannot show it).
 
 What this means for the gate: rmcp is a **correct** protocol implementation for the tools path in all five
 revisions, so "rmcp is wrong or missing something" is not a reason to own layer 1. The remaining reasons to own it

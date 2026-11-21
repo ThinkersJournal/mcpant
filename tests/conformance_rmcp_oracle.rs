@@ -150,7 +150,23 @@ async fn run_stateless(report: &mut Vec<String>) {
     w.send(&json!({"jsonrpc":"2.0","id":4,"method":"tools/list","params":{"_meta": bad}}))
         .await;
     match w.recv().await {
-        Some(m) => report.push(format!("[{rev}] unsupported-version reply: {}", m)),
+        Some(m) => {
+            report.push(format!("[{rev}] unsupported-version reply: {}", m));
+            // Control: the same reply with the wrong code must FAIL this definition, or the check above asserts nothing.
+            let mut wrong = m.clone();
+            wrong["error"]["code"] = json!(-32000);
+            assert!(
+                schema::validate(rev, "UnsupportedProtocolVersionError", &wrong).is_err(),
+                "a wrong error code passed UnsupportedProtocolVersionError"
+            );
+            check(
+                report,
+                rev,
+                "UnsupportedProtocolVersionError",
+                "UnsupportedProtocolVersionError",
+                &m,
+            );
+        }
         None => report.push(format!(
             "[{rev}] DIFF no reply to an unsupported protocol version"
         )),
