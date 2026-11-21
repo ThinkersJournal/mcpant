@@ -170,7 +170,7 @@ Suite results are published per revision; a revision we cannot fully pass is mar
 |---|---|---|
 | json-mcp-server `src/mcp/*`, tests | MIT OR Apache-2.0, Eric Evans 2025-06-29, lane rewrites 2026-10-25 | seed core + tests |
 | rust-analyzer-mcp-server `src/protocol.rs`, stdio loop | MIT, (c) 2025 Eric Evans, single author; not checked against spec text | seed negotiation; re-derive against spec |
-| sageant `crates/sageant-mcp` | MIT OR Apache-2.0; per-file trace **not redone**; credit sageant lane | seed host layer (PR offered on go) |
+| sageant `crates/sageant-mcp` | MIT OR Apache-2.0; **per-file trace done 2026-11-21** at sageant `origin/main` e7c04ad: all 5 files of the crate (`src/lib.rs`, `src/server.rs`, `tests/tools.rs`, `tests/wire.rs`, `README.md`) were first committed in 7dc0f1f (2026-11-15, sageant#24) by the lane, SPDX `MIT OR Apache-2.0` in each source file, and a grep for copyright/adapted/derived/based-on/copied/URL markers found none naming a third party (control: the same grep finds the SPDX lines). Limit: this shows no *declared* third-party origin, not that none exists; `within_budget` and `fit` are generic and were not compared against other code. Credit the sageant lane | seed host layer (PR offered on go) |
 | synapse channel push + wire probe | MIT OR Apache-2.0, own code | seed channel feature and probe tooling |
 | wasm-sandbox templates | MIT, Eric Evans (+ his AI agent); "none worth seeding" | JSON-RPC type shapes at most |
 | MoCoPr | MIT OR Apache-2.0: LICENSE-MIT and LICENSE-APACHE on main (`98d0c31`), matching its manifest; author Eric Evans | may be lifted (limits middleware); keep both licence texts and credit Eric Evans |
