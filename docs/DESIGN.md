@@ -205,3 +205,10 @@ The first release is a plain 0.x (6.30 allows release candidates only for too-br
 4. Answered in part (2026-11-21, section 5): CapAnt is capability matching, `redactant` is secret values, AuditAnt is a 0.0.0 placeholder, ConfigurAnt fits but needs Rust 1.95. Still unread: their source APIs.
 
 — lane: mcpant
+
+### 4c. HTTP stream edges (2026-11-22, rmcp 3.11.0, httpant 0.7.10, `tests/http_stream_edges.rs`)
+
+- **Long idle:** a standalone GET stream held 35 s with nothing pushed received rmcp's `:` keep-alive comments (two in 35 s, the 15 s interval) and stayed usable: a push after the idle landed on it.
+- **Client that never opens the GET stream:** `channel::notify` returns `Ok` (the tool result says `sent`) and the event appears on NEITHER the POST response stream (which carries only the tool result) nor anywhere else. A host cannot learn from `notify` that nobody was listening; if delivery matters it must track whether a GET stream is open. Open item: a way for `notify` to report "no listener".
+- **End of the listen stream:** after `DELETE` the standalone stream ends cleanly (no hang, no error frame) within 5 s.
+- Still open: MRTR `inputRequests`, a real Claude Code client, unreleased httpant request-side timeouts.
