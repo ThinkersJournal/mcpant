@@ -5,7 +5,7 @@
 //! call over the timeout, or one that cannot get a slot, answers as an error result with code `timeout` or `busy`.
 //!
 //! Rate limiting (calls per window, per client) is not here: it needs a client identity, which belongs to the HTTP mount
-//! (`tower::limit::RateLimit`, `tower::limit::ConcurrencyLimit`) rather than to a backend.
+//! (`tower::limit::ConcurrencyLimit` for a cap; a keyed limiter for per-client budgets, worked example in `tests/http_rate_limit.rs`) rather than to a backend.
 
 use std::sync::Arc;
 use std::time::Duration;
