@@ -103,10 +103,20 @@ impl Session {
             .send()
             .await
             .expect("initialize");
-        let sid = init.headers()["mcp-session-id"].to_str().unwrap().to_owned();
+        let sid = init.headers()["mcp-session-id"]
+            .to_str()
+            .unwrap()
+            .to_owned();
         let _ = init.text().await;
-        let s = Session { c, url, sid, _server: server };
-        let ack = s.post(json!({"jsonrpc":"2.0","method":"notifications/initialized"})).await;
+        let s = Session {
+            c,
+            url,
+            sid,
+            _server: server,
+        };
+        let ack = s
+            .post(json!({"jsonrpc":"2.0","method":"notifications/initialized"}))
+            .await;
         assert_eq!(ack.status().as_u16(), 202);
         s
     }
@@ -148,18 +158,35 @@ impl Session {
 async fn standalone_stream_survives_past_the_keepalive_interval() {
     let s = Session::open().await;
     let mut standalone = s.listen().await;
-    let quiet = read_until(&mut standalone, "notifications/claude/channel", Duration::from_secs(35)).await;
+    let quiet = read_until(
+        &mut standalone,
+        "notifications/claude/channel",
+        Duration::from_secs(35),
+    )
+    .await;
     println!("35 s idle on the standalone stream saw: {quiet:?}");
-    assert!(!quiet.contains("notifications/claude/channel"), "nothing was pushed yet");
+    assert!(
+        !quiet.contains("notifications/claude/channel"),
+        "nothing was pushed yet"
+    );
 
     let call = s.post(s.call_push(2)).await;
     let mut call_body = call.into_body();
     let on_post = read_until(&mut call_body, "\"id\":2", Duration::from_secs(2)).await;
-    let on_stream = read_until(&mut standalone, "notifications/claude/channel", Duration::from_secs(3)).await;
+    let on_stream = read_until(
+        &mut standalone,
+        "notifications/claude/channel",
+        Duration::from_secs(3),
+    )
+    .await;
     println!("after 35 s idle: POST saw {on_post:?}; standalone saw {on_stream:?}");
-    assert!(on_post.contains("\"id\":2"), "tool result must return on the POST: {on_post}");
     assert!(
-        on_stream.contains("notifications/claude/channel") || on_post.contains("notifications/claude/channel"),
+        on_post.contains("\"id\":2"),
+        "tool result must return on the POST: {on_post}"
+    );
+    assert!(
+        on_stream.contains("notifications/claude/channel")
+            || on_post.contains("notifications/claude/channel"),
         "the event reached neither stream after a long idle"
     );
 }
@@ -172,7 +199,10 @@ async fn push_to_a_client_that_never_opened_the_get_stream() {
     let mut call_body = call.into_body();
     let on_post = read_until(&mut call_body, "\"id\":2", Duration::from_secs(3)).await;
     println!("no GET stream: POST response saw {on_post:?}");
-    assert!(on_post.contains("\"id\":2"), "the tool call itself must still answer: {on_post}");
+    assert!(
+        on_post.contains("\"id\":2"),
+        "the tool call itself must still answer: {on_post}"
+    );
     // Whether `sent` or `error:` comes back, and whether the event rode the POST, is the recorded finding, not an assertion.
 }
 
@@ -181,14 +211,13 @@ async fn push_to_a_client_that_never_opened_the_get_stream() {
 async fn standalone_stream_ends_when_the_session_is_deleted() {
     let s = Session::open().await;
     let mut standalone = s.listen().await;
-    let del = s
-        .c
-        .delete(&s.url)
-        .header("mcp-session-id", &s.sid)
-        .header("mcp-protocol-version", "2025-11-25")
-        .send()
-        .await
-        .expect("DELETE");
+    let del =
+        s.c.delete(&s.url)
+            .header("mcp-session-id", &s.sid)
+            .header("mcp-protocol-version", "2025-11-25")
+            .send()
+            .await
+            .expect("DELETE");
     assert!(del.status().is_success(), "DELETE {}", del.status());
     let ended = tokio::time::timeout(Duration::from_secs(5), async {
         let mut seen = String::new();
@@ -206,5 +235,8 @@ async fn standalone_stream_ends_when_the_session_is_deleted() {
     })
     .await;
     println!("standalone stream after DELETE: {ended:?}");
-    assert!(ended.is_ok(), "the standalone stream hung after the session was deleted");
+    assert!(
+        ended.is_ok(),
+        "the standalone stream hung after the session was deleted"
+    );
 }

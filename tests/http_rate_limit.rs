@@ -43,7 +43,11 @@ struct PerClient {
 
 impl PerClient {
     fn new(max: u32, window: Duration) -> Self {
-        Self { max, window, seen: Arc::default() }
+        Self {
+            max,
+            window,
+            seen: Arc::default(),
+        }
     }
 
     /// `Ok` to proceed, `Err(retry_after_secs)` when the client's budget for this window is spent.
@@ -93,7 +97,11 @@ async fn a_client_over_budget_gets_429_and_another_client_is_unaffected() {
             r.map(Body::new) as Response
         }
     };
-    let server = Server::new().post("/mcp", mount).bind("127.0.0.1:0").await.expect("bind");
+    let server = Server::new()
+        .post("/mcp", mount)
+        .bind("127.0.0.1:0")
+        .await
+        .expect("bind");
     let url = format!("http://{}/mcp", server.addr());
     let c = Client::new();
     let init = |who: &'static str| {
