@@ -205,3 +205,22 @@ The first release is a plain 0.x (6.30 allows release candidates only for too-br
 4. Answered in part (2026-11-21, section 5): CapAnt is capability matching, `redactant` is secret values, AuditAnt is a 0.0.0 placeholder, ConfigurAnt fits but needs Rust 1.95. Still unread: their source APIs.
 
 — lane: mcpant
+
+### 4c. HTTP stream edges (2026-11-22, rmcp 3.11.0, httpant 0.7.10, `tests/http_stream_edges.rs`)
+
+- **Long idle:** a standalone GET stream held 35 s with nothing pushed received rmcp's `:` keep-alive comments (two in 35 s, the 15 s interval) and stayed usable: a push after the idle landed on it.
+- **Client that never opens the GET stream:** `channel::notify` returns `Ok` (the tool result says `sent`) and the event appears on NEITHER the POST response stream (which carries only the tool result) nor anywhere else. A host cannot learn from `notify` that nobody was listening; if delivery matters it must track whether a GET stream is open. Open item: a way for `notify` to report "no listener".
+- **End of the listen stream:** after `DELETE` the standalone stream ends cleanly (no hang, no error frame) within 5 s.
+- Still open: MRTR `inputRequests`, a real Claude Code client, unreleased httpant request-side timeouts.
+
+### 4d. Sibling Ant API surfaces (2026-11-23, read at each repo's origin/main)
+
+Public surface only (`src/lib.rs` re-exports), no code lifted. Measured at origin/main of each repo on 2026-11-23.
+
+| Crate | Version / MSRV | Public surface relevant to MCPAnt |
+|---|---|---|
+| CapAnt | 0.1.10 / 1.88 | `Provider::new(id, Vec<Surface>)`, `Need::new(Vec<CapabilityId>)`, `Policy`, `Context`, `Matrix`, `Evidence`/`Reason`/`State`; a capability engine returning providers that satisfy ordered needs, with evidence. Fit: a backend-selection layer for the `backend` feature, not required by it. |
+| redactant | 0.1.16 / 1.88 | `Secret<T: Zeroize>` (`new`, `expose`), `Scrubber`, `Redact` derive, `Fingerprint`, `Sink`. Fit: tool-result and log redaction (the `truncate` and `limits` layers could call a `Scrubber`); MSRV 1.88 is below the repo's. |
+| ConfigurAnt | 0.8.7 / 1.95 | `Loader`, `Config`, `Layer`, `Explanation`, schema-first TOML, env/CLI layering. Fit: server config; MSRV 1.95 is the highest of the three. |
+
+Unread, still open: rig `plugins/rig-mcp-client` (the namespacing rule's origin; not a local checkout) and the four channel leads (InterWeave claude/channel-core, AgEnD, teamctl team-mcp, tmt; none cloned under C:\Projects). No layer is built from these notes; each needs its own DESIGN row first.
