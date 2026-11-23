@@ -223,7 +223,7 @@ Public surface only (`src/lib.rs` re-exports), no code lifted. Measured at origi
 | redactant | 0.1.16 / 1.88 | `Secret<T: Zeroize>` (`new`, `expose`), `Scrubber`, `Redact` derive, `Fingerprint`, `Sink`. Fit: tool-result and log redaction (the `truncate` and `limits` layers could call a `Scrubber`); MSRV 1.88 is below the repo's. |
 | ConfigurAnt | 0.8.7 / 1.95 | `Loader`, `Config`, `Layer`, `Explanation`, schema-first TOML, env/CLI layering. Fit: server config; MSRV 1.95 is the highest of the three. |
 
-Rig and the channel leads are now read in 4e (tmt unidentified).
+Rig and the channel leads are now read in 4e (tmt dropped).
 
 ### 4e. Namespacing rule and channel leads, read (2026-11-23)
 
@@ -233,6 +233,6 @@ Shallow clones (`--depth 1`) at rig 8b68c0c, InterWeave 79c544f, AgEnD c2f61ed, 
 - **InterWeave `crates/claude/channel-core` (Apache-2.0, 3345 lines in 10 files).** A pure-logic half with no I/O: `BridgeState`/`ChannelNotification`, `ChannelMeta` with `MAX_META_VALUE_BYTES`, `ReplyTokenTable` (reply routing), `PullQueue`, content/encoding limits, tool-call types. Its design is tied to its own transport (IPC client, libp2p layering rule). Useful as a reference for meta-size limits and reply-token routing; not a drop-in.
 - **teamctl `crates/team-mcp` (MIT).** Pushes `notifications/claude/channel` on stdout when an inbox row arrives, and declares `experimental: {"claude/channel": {}}` in `initialize` (`src/rpc.rs:68-79`, noting that the runtime silently drops notifications without it). This agrees with mcpant's own channel feature and the spike's wire finding; its tests budget 30 s per frame on loaded CI runners.
 - **AgEnD `crates/agend/src/claude/channel.rs` (Apache-2.0, has NOTICE).** A Claude channel implementation inside a daemon, with contract tests under `tests/common/claude_contract.rs`. Not read beyond file layout; read `claude_contract.rs` before writing mcpant's own wire-contract test.
-- **tmt: not identified.** `gh search repos` finds only `eliataylor/tmt-mcp` (GitHub-issue PR driver), which does not look like the lead; ask pm-platform for the repo URL.
+- **tmt: lead name recorded without a URL, not identified, dropped** (pm-platform, 2026-11-23: a re-run of `gh search code "claude/channel"` gave 40 hits, none named tmt). Not cited as read.
 
-Result: no lift is warranted; synapse stays the channel source. Open: tmt's identity, AgEnD contract tests.
+Result: no lift is warranted; synapse stays the channel source. Open: AgEnD contract tests (not read).
