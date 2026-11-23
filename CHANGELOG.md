@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.4] - 2026-11-23
+
+- Docs and tests only: the rate-limit pointer in `src/limits.rs` now names a keyed limiter with a worked example in `tests/http_rate_limit.rs`; HTTP stream edge tests; `docs/DESIGN.md`; `LICENSE-APACHE` replaced with the canonical Apache-2.0 text (11358 bytes, sha256 cfc7749b). Allocated by pm-assist 2026-11-23.
+
 ## [0.0.3] - 2026-11-22
 
 - Host layer over a pinned rmcp 3.11, each layer an opt-in cargo feature, none on by default (DESIGN s4b): `truncate` (sageant's `within_budget`/`fit` lifted with credit, plus reported variants), `channel` (`claude/channel` capability, `escape`, `notify`), `backend` (transport-free `ToolBackend` served as an rmcp server; shape lifted from sageant-mcp), `limits` (per-call timeout that cancels, concurrency cap), `namespace` (`<server>__<tool>`).
