@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.5] - 2026-11-24
+
+- Docs and CI only: `docs/DESIGN.md` update; the CodeRipper portfolio pin moves to dc45e36 (0.47.15). Allocated by pm-assist.
+
 ## [0.0.4] - 2026-11-23
 
 - Docs and tests only: the rate-limit pointer in `src/limits.rs` now names a keyed limiter with a worked example in `tests/http_rate_limit.rs`; HTTP stream edge tests; `docs/DESIGN.md`; `LICENSE-APACHE` replaced with the canonical Apache-2.0 text (11358 bytes, sha256 cfc7749b). Allocated by pm-assist 2026-11-23.
