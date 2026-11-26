@@ -1,12 +1,12 @@
 # MCPAnt design note
 
-Status: draft 1, 2026-11-20 (lane: mcpant). Due 2026-11-23. Docs only; nothing here is built.
+Status: draft 1, 2026-11-20 (lane: mcpant); updated through 2026-11-26. Sections 1 to 3 are the original design and describe the own-core API that was deferred (4b); what is built is the host layer in the README.
 Inputs: pm-platform's `MCPANT-INPUTS.md` (lane-reported, 14 lanes). Anything marked **verified** I checked myself at
 the stated ref; everything else is a lane's report and is labelled so.
 
 ## 1. The hello-world (the product, per CireSnave 6.24)
 
-A stranger should be able to copy this and have a working stdio MCP server. This is the *intended* API, not yet real.
+A stranger should be able to copy this and have a working stdio MCP server. This is the *intended* API of the deferred own core; what ships today is the `backend` hello-world in the README (2026-11-26 gate run: `cargo new` to a running server in 5 commands and one paste, 49 s warm; the first run failed because `Tool` needed a direct rmcp dependency and the server named itself "rmcp", both fixed).
 
 ```rust
 use mcpant::{Server, Tool, ToolError};

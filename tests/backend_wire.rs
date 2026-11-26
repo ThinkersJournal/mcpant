@@ -38,6 +38,7 @@ async fn backend_lists_calls_and_reports_failures_as_error_results() {
     tokio::spawn(async move {
         if let Ok(svc) = BackendServer::new(Echo)
             .with_instructions("test backend")
+            .with_server_info("echo-server", "9.9.9")
             .serve(server)
             .await
         {
@@ -56,6 +57,8 @@ async fn backend_lists_calls_and_reports_failures_as_error_results() {
         )
         .await;
     assert_eq!(init["result"]["instructions"], "test backend");
+    assert_eq!(init["result"]["serverInfo"]["name"], "echo-server");
+    assert_eq!(init["result"]["serverInfo"]["version"], "9.9.9");
     wire.send(json!({"jsonrpc":"2.0","method":"notifications/initialized"}))
         .await;
     let list = wire

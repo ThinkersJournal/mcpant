@@ -17,6 +17,9 @@ use rmcp::model::{
 };
 use rmcp::service::RequestContext;
 use rmcp::{ErrorData as McpError, RoleServer, ServerHandler};
+
+/// rmcp's tool definition, re-exported so a backend needs no direct `rmcp` dependency.
+pub use rmcp::model::Tool as ToolDefinition;
 use serde_json::{Value, json};
 
 /// Why a tool call failed: a short stable `code` for the client and a human `message`.
@@ -74,6 +77,7 @@ pub trait ToolBackend: Send + Sync + 'static {
 pub struct BackendServer<B> {
     backend: Arc<B>,
     instructions: Option<String>,
+    server_info: Option<(String, String)>,
 }
 
 impl<B> Clone for BackendServer<B> {
@@ -81,6 +85,7 @@ impl<B> Clone for BackendServer<B> {
         Self {
             backend: Arc::clone(&self.backend),
             instructions: self.instructions.clone(),
+            server_info: self.server_info.clone(),
         }
     }
 }
@@ -92,7 +97,16 @@ impl<B: ToolBackend> BackendServer<B> {
         Self {
             backend: Arc::new(backend),
             instructions: None,
+            server_info: None,
         }
+    }
+
+    /// The server name and version a client sees at initialisation (otherwise it sees rmcp's own). Pass
+    /// `env!("CARGO_PKG_NAME")` and `env!("CARGO_PKG_VERSION")`.
+    #[must_use]
+    pub fn with_server_info(mut self, name: impl Into<String>, version: impl Into<String>) -> Self {
+        self.server_info = Some((name.into(), version.into()));
+        self
     }
 
     /// The `instructions` text shown to the client at initialisation.
@@ -101,11 +115,43 @@ impl<B: ToolBackend> BackendServer<B> {
         self.instructions = Some(text.into());
         self
     }
+
+    /// Serve over this process's stdin and stdout until the client disconnects. stdout carries only the protocol, so
+    /// send logs to stderr. Needs a tokio runtime in the caller (`#[tokio::main]`).
+    ///
+    /// # Errors
+    /// The handshake failed or the connection ended abnormally; the message says which.
+    pub async fn serve_stdio(self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        use rmcp::ServiceExt;
+        let running = self
+            .serve((tokio::io::stdin(), tokio::io::stdout()))
+            .await?;
+        running.waiting().await?;
+        Ok(())
+    }
+}
+
+/// A tool definition from a name, a description and its JSON Schema (`{"type":"object","properties":{..}}`).
+///
+/// # Panics
+/// If `input_schema` is not a JSON object; that is a programming error caught the first time the server starts.
+#[must_use]
+pub fn tool(name: &'static str, description: &'static str, input_schema: Value) -> Tool {
+    let Value::Object(schema) = input_schema else {
+        panic!("input_schema for tool {name} must be a JSON object");
+    };
+    Tool::new(name, description, Arc::new(schema))
 }
 
 impl<B: ToolBackend> ServerHandler for BackendServer<B> {
     fn get_info(&self) -> ServerConfig {
-        let info = ServerConfig::new(ServerCapabilities::builder().enable_tools().build());
+        let mut info = ServerConfig::new(ServerCapabilities::builder().enable_tools().build());
+        if let Some((name, version)) = &self.server_info {
+            info = info.with_server_info(rmcp::model::Implementation::new(
+                name.clone(),
+                version.clone(),
+            ));
+        }
         match &self.instructions {
             Some(text) => info.with_instructions(text.clone()),
             None => info,

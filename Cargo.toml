@@ -2,34 +2,39 @@
 name = "mcpant"
 version = "0.0.5"
 edition = "2024"
-description = "Reserved name: a Model Context Protocol library (client and server) for Rust. Placeholder, no functionality yet."
+rust-version = "1.88"
+description = "Host layer over rmcp for Model Context Protocol servers in Rust: truncation, Claude channel push, plain-function tool backends, call limits, tool namespacing. Opt-in features."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ThinkersJournal/mcpant"
 readme = "README.md"
+
+[[example]]
+name = "hello"
+required-features = ["backend"]
 
 [features]
 default = []
 truncate = ["dep:serde_json"]
 channel = ["dep:serde_json", "dep:rmcp"]
-backend = ["dep:serde_json", "dep:rmcp"]
+backend = ["dep:serde_json", "dep:rmcp", "dep:tokio"]
 limits = ["backend", "dep:tokio"]
 namespace = []
 
 [dependencies]
 serde_json = { version = "1", optional = true }
-rmcp = { version = "3.11", optional = true, default-features = false, features = ["server"] }
+rmcp = { version = "3.12", optional = true, default-features = false, features = ["server"] }
 
-tokio = { version = "1", optional = true, features = ["time", "sync"] }
+tokio = { version = "1", optional = true, features = ["time", "sync", "io-std"] }
 
 [dev-dependencies]
 jsonschema = { version = "0.61", default-features = false }
 serde_json = "1"
-rmcp = { version = "3.11", features = ["server", "macros", "transport-async-rw", "transport-streamable-http-server"] }
+rmcp = { version = "3.12", features = ["server", "macros", "transport-async-rw", "transport-streamable-http-server"] }
 httpant-core = "0.7"
 httpant = "0.7"
 http = "1"
 http-body-util = "0.1"
 tower = { version = "0.5", features = ["util"] }
-tokio = { version = "1", features = ["rt", "macros", "io-util", "time"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "io-util", "time"] }
 serde = { version = "1", features = ["derive"] }
 schemars = "1"
