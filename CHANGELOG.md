@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (PM allocates the number)
+## [0.0.6] - 2026-11-27
 
 - `backend`: `BackendServer::serve_stdio()`, `BackendServer::with_server_info(name, version)`, `tool()` helper and `ToolDefinition` re-export, so a hello-world needs no direct rmcp dependency (found by timing it from a clean project). `backend` now pulls tokio (`io-std`). Minor, additive.
 - `examples/hello.rs`, the README hello-world, built by CI. README and ROADMAP now say what exists and what is deferred.

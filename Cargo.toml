@@ -1,6 +1,6 @@
 [package]
 name = "mcpant"
-version = "0.0.5"
+version = "0.0.6"
 edition = "2024"
 rust-version = "1.88"
 description = "Host layer over rmcp for Model Context Protocol servers in Rust: truncation, Claude channel push, plain-function tool backends, call limits, tool namespacing. Opt-in features."
